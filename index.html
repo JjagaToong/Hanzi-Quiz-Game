@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>반짝반짝 한자 퀴즈 (300자 완전판)</title>
+    <title>반짝반짝 한자 퀴즈</title>
     <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -84,13 +84,13 @@
 
 <div id="game-container">
     <div id="start-screen">
-        <h1>🌸 한자 팡팡! (300자)</h1>
+        <h1>🌸 한자 팡팡!</h1>
         <p class="info-text">너의 이름을 알려줘!</p>
         <input type="text" id="user-name" placeholder="이름을 입력하세요">
         
         <p class="info-text">도전할 급수를 선택해줘!</p>
         <select id="grade-select">
-            <option value="all">전체 급수 (300자)</option>
+            <option value="all">전체 급수 (8급~6급)</option>
             <option value="8">8급 (50자)</option>
             <option value="7">7급 (100자)</option>
             <option value="6">6급 (150자)</option>
@@ -114,7 +114,7 @@
 </div>
 
 <script>
-    // 한국어문회 8급(50), 7급(100), 6급(150) 총 300자 완전 데이터셋
+    // 한국어문회 8급(50자), 7급(100자), 6급(150자) 총 300자 데이터셋
     const rawVocabulary = [
         // 8급 (50자)
         { kanji: '一', read: '일', mean: '한', grade: '8' }, { kanji: '二', read: '이', mean: '두', grade: '8' },
@@ -280,12 +280,13 @@
     let score = 0;
     let setWords = [];
     let isAnswering = false;
+    const QUESTIONS_PER_SET = 10; // 무작위로 추출할 출제 문제 수 (10문제)
 
     function startGame() {
         userName = document.getElementById('user-name').value.trim() || "친구";
         selectedGrade = document.getElementById('grade-select').value;
         
-        // 급수별 필터링
+        // 선택 급수에 맞춰 한자 필터링
         if (selectedGrade === "all") {
             activeVocabulary = [...rawVocabulary];
         } else {
@@ -300,8 +301,12 @@
     function loadSet(setNum) {
         currentSet = setNum;
         currentIdx = 0;
-        // 선택한 급수의 전체 문항 무작위 셔플
-        setWords = [...activeVocabulary].sort(() => Math.random() - 0.5);
+        
+        // 급수 한자 무작위 셔플 후 10문제 추출
+        let shuffled = [...activeVocabulary].sort(() => Math.random() - 0.5);
+        let count = Math.min(QUESTIONS_PER_SET, shuffled.length);
+        setWords = shuffled.slice(0, count);
+
         showQuestion();
     }
 
@@ -335,7 +340,7 @@
         const progress = document.getElementById('progress-bar');
 
         feedback.innerHTML = "";
-        let gradeLabel = selectedGrade === 'all' ? '전체 급수 (300자)' : `${selectedGrade}급`;
+        let gradeLabel = selectedGrade === 'all' ? '전체 급수' : `${selectedGrade}급`;
         stageInfo.innerText = `[${gradeLabel}] ${getSetTitle()}`;
         progress.innerText = `진행률: ${currentIdx + 1} / ${setWords.length}`;
 
@@ -344,7 +349,7 @@
         let html = "";
 
         if(currentSet === 1) {
-            // 세트 1: 객관식 (한자 제시 -> 올바른 뜻과 음 고르기)
+            // 세트 1: 객관식
             html = `<div class="word-display">${item.kanji}</div><div class="options">`;
             let choices = [fullAnswerText];
             while(choices.length < 4) {
@@ -358,7 +363,7 @@
             });
             html += `</div>`;
         } else {
-            // 세트 2,3,4: 주관식 (뜻 제시 -> 한자음 맞추기)
+            // 세트 2,3,4: 주관식 (입력창 예시 문구 제거)
             let maskPercent = currentSet === 2 ? 20 : (currentSet === 3 ? 50 : 100);
             let hint = maskWord(item.read, maskPercent);
             
@@ -366,7 +371,7 @@
                 <div class="word-display">${item.kanji}</div>
                 <div class="mean-display">뜻: ${item.mean}</div>
                 <div style="font-size: 1.8rem; letter-spacing: 5px; margin-bottom: 15px; color: #ff9f43;">힌트: ${hint}</div>
-                <input type="text" id="answer-input" placeholder="한자음을 입력하세요 (예: ${item.read})" onkeyup="if(window.event.keyCode==13) checkAnswer(this.value)">
+                <input type="text" id="answer-input" placeholder="한자음을 입력하세요" onkeyup="if(window.event.keyCode==13) checkAnswer(this.value)">
                 <br><button onclick="checkAnswer(document.getElementById('answer-input').value)">확인!</button>
             `;
         }
@@ -408,8 +413,8 @@
     }
 
     function showResult() {
-        const totalQuestions = activeVocabulary.length * 4;
-        const maxScore = totalQuestions * 10;
+        const questionCount = Math.min(QUESTIONS_PER_SET, activeVocabulary.length);
+        const maxScore = questionCount * 4 * 10; // 만점 400점 (10문제 × 4세트 × 10점)
         
         document.getElementById('quiz-screen').style.display = 'none';
         document.getElementById('result-screen').style.display = 'block';
